@@ -1,7 +1,9 @@
+/* eslint-disable no-new */
 import React, { Component } from 'react'
 import './login.less'
 import logo from './images/logo.png'
-import {Form, Icon, Input, Button, message} from 'antd'
+import {Form, Icon, Input, Button } from 'antd'
+import { regLogin } from '../../api'
 
 // 不能写在 import 之前
 // const Item = Form.Item
@@ -18,7 +20,13 @@ class Login extends Component {
         this.props.form.validateFields((err, values) => {
             // 校验成功
             if (!err) {
-                console.log('提交登录的 ajax 请求', values)
+                // console.log('提交登录的 ajax 请求', values)
+                const { username, password} = values
+                regLogin(username, password).then(response => {
+                    console.log('成功了', response.data)
+                }).catch(error => {
+                    console.log('失败了', error)
+                })
             } else {
                 console.log('校验失败！')
             }
