@@ -1,9 +1,12 @@
 /* eslint-disable no-new */
 import React, { Component } from 'react'
+import { Redirect } from 'react-router-dom'
 import './login.less'
 import logo from './images/logo.png'
-import {Form, Icon, Input, Button } from 'antd'
+import {Form, Icon, Input, Button, message } from 'antd'
 import { regLogin } from '../../api'
+import  memoryUtills from '../../utils/memoryUtills'
+import storageUtils from '../../utils/storageUtils'
 
 // 不能写在 import 之前
 // const Item = Form.Item
@@ -17,16 +20,38 @@ class Login extends Component {
         event.preventDefault()
 
         // 对所有的表单字段进行校验
-        this.props.form.validateFields((err, values) => {
+        this.props.form.validateFields(async (err, values) => {
             // 校验成功
             if (!err) {
                 // console.log('提交登录的 ajax 请求', values)
+                // 请求登录
                 const { username, password} = values
-                regLogin(username, password).then(response => {
-                    console.log('成功了', response.data)
-                }).catch(error => {
-                    console.log('失败了', error)
-                })
+                const response = await regLogin(username, password)
+                // console.log('请求成功', response.data)
+
+                const result = response.data // {status: 0, data: user}  {status: 1, msg: 'xxx'}
+                if (result.status === 0) { // 登录成功
+                    // 提示登录成功
+                    message.success('登录成功')
+
+                    // 保存 user
+                    const user = result.data
+                    memoryUtills.user = user // 保存在内存中
+                    storageUtils.saveUser(user) // 保存到 local 中
+
+                    // 跳转到管理界面 (不需要再回退回到登陆)
+                    this.props.history.replace('/')
+                } else { // 登录失败
+                    // 提示错误信息
+                    message.error(result.msg)
+                }
+
+
+                // regLogin(username, password).then(response => {
+                //     console.log('成功了', response.data)
+                // }).catch(error => {
+                //     console.log('失败了', error)
+                // })
             } else {
                 console.log('校验失败！')
             }
@@ -62,6 +87,12 @@ class Login extends Component {
     }
 
     render () {
+        // 如果用户已经登录，就自动跳转到管理界面
+        const user =memoryUtills.user
+        if (user && user._id) {
+            return <Redirect to='/' />
+        }
+
         // 得到具有强大功能的 form 对象
         const form = this.props.form
         const { getFieldDecorator } = form
@@ -150,3 +181,13 @@ export default WrapLogin
 
 // 1. 前台表单验证
 // 2. 收集表单输入数据
+
+
+// async和await
+// 1. 作用?
+//    简化promise对象的使用: 不用再使用then()来指定成功/失败的回调函数
+//    以同步编码(没有回调函数了)方式实现异步流程
+// 2. 哪里写await?
+//     在返回promise的表达式左侧写await: 不想要promise, 想要promise异步执行的成功的value数据
+// 3. 哪里写async?
+//     await所在函数(最近的)定义的左侧写async
